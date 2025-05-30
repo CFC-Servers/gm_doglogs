@@ -18,5 +18,5 @@ local function updateTracker()
     } ) )
 end
 
-timer.Create( "DogLogs_MapPlaytime", 60, 1, updateTracker )
+timer.Create( "DogLogs_MapPlaytime", 60, 0, updateTracker )
 hook.Add( "ShutDown", "DogLogs_MapPlaytime", updateTracker )
