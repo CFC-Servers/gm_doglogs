@@ -1,7 +1,17 @@
+--- @diagnostic disable-next-line: param-type-mismatch
+local apiKey = CreateConVar( "datadog_api_key", "", { FCVAR_ARCHIVE, FCVAR_PROTECTED }, "API key for DataDog Metrics reporting" )
+--- @diagnostic disable-next-line: param-type-mismatch
+local hostname = CreateConVar( "datadog_hostname", "", { FCVAR_ARCHIVE, FCVAR_PROTECTED }, "Hostname for DataDog Metrics reporting" )
+--- @diagnostic disable-next-line: param-type-mismatch
+local serviceName = CreateConVar( "datadog_service_name", "", { FCVAR_ARCHIVE, FCVAR_PROTECTED }, "Service name for DataDog Metrics reporting" )
+
+-- API Ref: https://docs.datadoghq.com/api/latest/metrics/#submit-metrics
+-- Ref about Metric Units: https://docs.datadoghq.com/metrics/units/
+
 --- @class DogMetrics
 DogMetrics = {
     reportURL = "https://api.datadoghq.com/api/v2/series",
-    reportInterval = 60,
+    reportInterval = 10,
     trackers = {}
 }
 
@@ -25,14 +35,14 @@ function DogMetrics:NewMetric( name, unit, interval, metricType, cb )
     --- @class DogMetrics_Tracker
     local tracker = {
         payload = {
-            interval = interval,
+            interval = interval, -- Apparently not needed for the Gauge type
             metric = name,
             type = metricType,
             unit = unit,
             points = points,
             resources = {
-                { name = "Dev", type = "host" },
-                { name = "cfcdev", type = "service" }
+                { name = hostname:GetString(), type = "host" },
+                { name = serviceName:GetString(), type = "service" }
             }
         }
     }
@@ -106,14 +116,26 @@ end
 
 --- Reports the collected metrics to the DataDog Metrics API
 function DogMetrics:Report()
+    if not apiKey:GetString() or apiKey:GetString() == "" then
+        print( "DogMetrics: Report aborted - API key is not set" )
+        return
+    end
+
+    if #self.trackers == 0 then return end
+
     local payload = self:GetReportPayload()
     local body = util.TableToJSON( payload )
+
+    for _, tracker in ipairs( self.trackers ) do
+        tracker:ClearPoints()
+    end
 
     local queued = HTTP( {
         url = self.reportURL,
         method = "POST",
         type = "application/json",
         timeout = 5,
+        headers = { ["DD-API-KEY"] = apiKey:GetString() },
 
         body = body,
 
@@ -121,8 +143,6 @@ function DogMetrics:Report()
             if code ~= 202 then
                 error( "Failed to report metrics: HTTP " .. code .. " - " .. successBody )
             end
-
-            print( "[DogLogs] Metrics reported successfully." )
         end,
 
         failed = function( reason )
@@ -130,15 +150,12 @@ function DogMetrics:Report()
         end
     } )
 
-    for _, tracker in ipairs( self.trackers ) do
-        tracker:ClearPoints()
-    end
-
     if not queued then
         error( "Failed to queue metrics report - HTTP request failed" )
     end
 end
 
 timer.Create( "DogMetrics_Report", DogMetrics.reportInterval, 0, function()
+    if #DogMetrics.trackers == 0 then return end
     DogMetrics:Report()
 end )
