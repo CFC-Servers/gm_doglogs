@@ -172,6 +172,10 @@ timer.Create( "DogMetrics_Report", reportInterval:GetFloat(), 0, function()
     DogMetrics:Report()
 end )
 
+hook.Add( "ShutDown", "DogMetrics_ShutDown", function()
+    DogMetrics:Report()
+end )
+
 cvars.AddChangeCallback( "datadog_report_interval", function( _, _, newValue )
     local newInterval = tonumber( newValue )
     if not newInterval or newInterval <= 0 then
