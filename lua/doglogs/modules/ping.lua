@@ -1,7 +1,10 @@
 local startTime = os.time()
-local perPlayerStats = {
+local perPlayerStats = { -- Will track mean, median, q1, q3, min, max.
     packet_loss = function( ply ) return ply:PacketLoss() end,
     ping = function( ply ) return ply:Ping() end,
+}
+local perPlayerStatsSumOnly = { -- Will only track the sum.
+    afk = function( ply ) return ply:GetNWBool( "CFC_AntiAFK_IsAFK", false ) and 1 or 0 end,
 }
 
 local function ping()
@@ -49,6 +52,17 @@ local function ping()
         tbl.q3 = vals[math.ceil( plyCount * 0.75 )]
         tbl.min = vals[1]
         tbl.max = vals[plyCount]
+    end
+
+    -- Collect sum-only player stats.
+    for key, func in pairs( perPlayerStatsSumOnly ) do
+        local sum = 0
+
+        for _, ply in ipairs( plys ) do
+            sum = sum + func( ply )
+        end
+
+        pingData[key] = sum
     end
 
     print( util.TableToJSON( {
