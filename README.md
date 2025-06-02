@@ -64,11 +64,11 @@ DogMetrics:NewMetric( {
     name = "gameserver.luaMemory",
     unit = "kilobyte", -- or "frame", "byte", "packet", etc.
     interval = 1, -- In seconds, how often to collect this metric
-    metricType = DogMetrics.MetricTypes.Rate, -- or .Gauge, .Count
+    metricType = DogMetrics.MetricTypes.Count, -- or .Rate, .Gauge
     measureFunc = function()
         -- This function gets called at the defined interval, and should return a number
 
-        return collectgarbage("count") -- already in kilobytes
+        return collectgarbage( "count" ) -- already in kilobytes
     end
 } )
 ```
