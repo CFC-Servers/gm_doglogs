@@ -4,6 +4,8 @@ local apiKey = CreateConVar( "datadog_api_key", "", { FCVAR_ARCHIVE, FCVAR_PROTE
 local hostname = CreateConVar( "datadog_hostname", "", { FCVAR_ARCHIVE, FCVAR_PROTECTED }, "Hostname for DataDog Metrics reporting" )
 --- @diagnostic disable-next-line: param-type-mismatch
 local serviceName = CreateConVar( "datadog_service_name", "", { FCVAR_ARCHIVE, FCVAR_PROTECTED }, "Service name for DataDog Metrics reporting" )
+--- @diagnostic disable-next-line: param-type-mismatch
+local reportInterval = CreateConVar( "datadog_report_interval", 10, { FCVAR_ARCHIVE, FCVAR_PROTECTED }, "Interval in seconds to report metrics to DataDog" )
 
 -- API Ref: https://docs.datadoghq.com/api/latest/metrics/#submit-metrics
 -- Ref about Metric Units: https://docs.datadoghq.com/metrics/units/
@@ -11,7 +13,6 @@ local serviceName = CreateConVar( "datadog_service_name", "", { FCVAR_ARCHIVE, F
 --- @class DogMetrics
 DogMetrics = {
     reportURL = "https://api.datadoghq.com/api/v2/series",
-    reportInterval = 10,
     trackers = {}
 }
 
@@ -23,13 +24,23 @@ DogMetrics.MetricTypes = {
     gauge = 3
 }
 
---- @param name string The name of the metric
---- @param unit string The unit of the metric (e.g., "ms", "bytes", etc.)
---- @param interval number The interval in seconds at which the metric should be reported
---- @param metricType DogMetrics_MetricTypes The type of the metric
---- @param cb fun(): number Callback function that will be called with the tracker object
+--- @class DogMetrics_NewMetricParams
+--- @field name string The name of the metric
+--- @field unit string The unit of the metric (e.g., "ms", "bytes", etc.)
+--- @field interval number The interval in seconds at which the metric should be reported
+--- @field metricType DogMetrics_MetricTypes The type of the metric
+--- @field measureFunc fun(): number Callback function that will be called with the tracker object - returns the value to add to the metric
+
+--- Creates a new metric tracker
+--- @param struct DogMetrics_NewMetricParams The parameters for the new metric
 --- @return DogMetrics_Tracker The tracker object that can be used to add points to the metric
-function DogMetrics:NewMetric( name, unit, interval, metricType, cb )
+function DogMetrics:NewMetric( struct )
+    local name = assert( struct.name, "Metric name is required" )
+    local unit = assert( struct.unit, "Metric unit is required" )
+    local interval = assert( struct.interval, "Metric interval is required" )
+    local metricType = assert( struct.metricType, "Metric type is required" )
+    local cb = assert( struct.measureFunc, "Callback function is required" )
+
     local points = {}
 
     --- @class DogMetrics_Tracker
@@ -155,7 +166,18 @@ function DogMetrics:Report()
     end
 end
 
-timer.Create( "DogMetrics_Report", DogMetrics.reportInterval, 0, function()
+timer.Create( "DogMetrics_Report", reportInterval:GetFloat(), 0, function()
     if #DogMetrics.trackers == 0 then return end
     DogMetrics:Report()
 end )
+
+cvars.AddChangeCallback( "datadog_report_interval", function( _, _, newValue )
+    local newInterval = tonumber( newValue )
+    if not newInterval or newInterval <= 0 then
+        print( "DogMetrics: Invalid report interval - must be a positive number" )
+        return
+    end
+
+    timer.Adjust( "DogMetrics_Report", newInterval )
+    print( "DogMetrics: Report interval changed to " .. newInterval .. " seconds" )
+end, "DogMetrics_Report_Interval_Change" )
