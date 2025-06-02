@@ -18,10 +18,10 @@ DogMetrics = {
 
 --- @enum DogMetrics_MetricTypes
 DogMetrics.MetricTypes = {
-    unspecified = 0,
-    count = 1,
-    rate = 2,
-    gauge = 3
+    Unspecified = 0,
+    Count = 1,
+    Rate = 2,
+    Gauge = 3
 }
 
 --- @class DogMetrics_NewMetricParams
