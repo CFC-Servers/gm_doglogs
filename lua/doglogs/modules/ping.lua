@@ -29,6 +29,7 @@ local function ping()
             tbl.q3 = 0
             tbl.min = 0
             tbl.max = 0
+            tbl.sum = 0
 
             continue
         end
