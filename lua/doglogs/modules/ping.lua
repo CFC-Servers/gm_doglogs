@@ -1,5 +1,5 @@
 local startTime = os.time()
-local perPlayerStats = { -- Will track mean, median, q1, q3, min, max, and sum.
+local perPlayerStats = { -- Will track mean, median, q1, q3, min, max, and sum. Will be prepended with "ply_".
     packet_loss = function( ply ) return ply:PacketLoss() end,
     ping = function( ply ) return ply:Ping() end,
     afk = function( ply ) return ply:GetNWBool( "CFC_AntiAFK_IsAFK", false ) and 1 or 0 end,
@@ -19,7 +19,7 @@ local function ping()
     -- Collect statistical values for each player stat.
     for key, func in pairs( perPlayerStats ) do
         local tbl = {}
-        pingData[key] = tbl
+        pingData["ply_" .. key] = tbl
 
         -- Avoid divide by zero.
         if plyCount == 0 then
