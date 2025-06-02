@@ -14,6 +14,7 @@ local function ping()
         session_time = os.time() - startTime,
         player_count = plyCount,
         map = game.GetMap(),
+        ent_count = ents.GetCount(),
     }
 
     -- Collect statistical values for each player stat.
