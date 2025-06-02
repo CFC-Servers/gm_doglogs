@@ -1,5 +1,5 @@
 local startTime = os.time()
-local perPlayerStats = { -- Will track mean, median, q1, q3, min, max.
+local perPlayerStats = { -- Will track mean, median, q1, q3, min, max, and sum.
     packet_loss = function( ply ) return ply:PacketLoss() end,
     ping = function( ply ) return ply:Ping() end,
     afk = function( ply ) return ply:GetNWBool( "CFC_AntiAFK_IsAFK", false ) and 1 or 0 end,
@@ -50,6 +50,7 @@ local function ping()
         tbl.q3 = vals[math.ceil( plyCount * 0.75 )]
         tbl.min = vals[1]
         tbl.max = vals[plyCount]
+        tbl.sum = valTotal
     end
 
     print( util.TableToJSON( {
