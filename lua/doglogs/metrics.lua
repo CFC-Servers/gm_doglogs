@@ -52,6 +52,7 @@ function DogMetrics:NewMetric( struct )
             unit = unit,
             points = points,
             resources = {
+                { name = "gmod", type = "source" },
                 { name = hostname:GetString(), type = "host" },
                 { name = serviceName:GetString(), type = "service" }
             }

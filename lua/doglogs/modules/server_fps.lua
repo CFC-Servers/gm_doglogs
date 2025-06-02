@@ -1,7 +1,7 @@
 -- Records the Server's FPS as a rate metric
 
 DogMetrics:NewMetric( {
-    name = "server.fps3",
+    name = "gameserver.fps",
     unit = "frame",
     interval = 1,
     metricType = DogMetrics.MetricTypes.rate,
