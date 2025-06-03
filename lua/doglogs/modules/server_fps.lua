@@ -18,7 +18,7 @@ local frameQueue = Deque() do
     currentTotal = targetFps * windowSize
 
     for _ = 1, windowSize do
-        frameQueue:Push( targetFps )
+        frameQueue.Push( targetFps )
     end
 end
 
@@ -26,8 +26,8 @@ local i = 0
 hook.Add( "Think", "DogMetrics_ServerFPS", function()
     local fps = 1 / FrameTime()
 
-    local oldestFps = frameQueue:Pop()
-    frameQueue:Push( fps )
+    local oldestFps = frameQueue.Pop()
+    frameQueue.Push( fps )
 
     currentTotal = currentTotal + fps - oldestFps
 
