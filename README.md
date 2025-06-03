@@ -61,7 +61,7 @@ Metrics are a different way to directly report numeric Metrics straight to DataD
 You can add new Metrics in the `lua/doglogs/modules/` directory. Roughly, it should look like this:
 ```lua
 DogMetrics:NewMetric( {
-    name = "gameserver.luaMemory",
+    name = "cfc.server.luaMemory", -- Suggested to prefix this with `<org>.` so you can easily search for all of your metrics on DD
     unit = "kilobyte", -- or "frame", "byte", "packet", etc.
     interval = 1, -- In seconds, how often to collect this metric
     metricType = DogMetrics.MetricTypes.Count, -- or .Rate, .Gauge

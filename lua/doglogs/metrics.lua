@@ -29,7 +29,7 @@ DogMetrics.MetricTypes = {
 --- @field unit string The unit of the metric (e.g., "ms", "bytes", etc.)
 --- @field interval number The interval in seconds at which the metric should be reported
 --- @field metricType DogMetrics_MetricTypes The type of the metric
---- @field measureFunc fun(): number Callback function that will be called with the tracker object - returns the value to add to the metric
+--- @field measureFunc? fun(): number Callback function that will be called with the tracker object - returns the value to add to the metric
 
 --- Creates a new metric tracker
 --- @param struct DogMetrics_NewMetricParams The parameters for the new metric
@@ -39,7 +39,7 @@ function DogMetrics:NewMetric( struct )
     local unit = assert( struct.unit, "Metric unit is required" )
     local interval = assert( struct.interval, "Metric interval is required" )
     local metricType = assert( struct.metricType, "Metric type is required" )
-    local cb = assert( struct.measureFunc, "Callback function is required" )
+    local cb = struct.measureFunc
 
     local points = {}
 
@@ -85,21 +85,25 @@ function DogMetrics:NewMetric( struct )
         error( "Error in metric '" .. name .. "': " .. message, 1 )
     end
 
-    timer.Create( timerName, interval, 0, function()
-        local success = ProtectedCall( function()
-            local value = cb()
+    -- If no callback is provided, we expect them to be using the tracker:AddPoint method directly at their own discretion
+    if cb then
+        timer.Create( timerName, interval, 0, function()
+            local success = ProtectedCall( function()
+                local value = cb()
 
-            if not value then
-                return err( "Callback for metric '" .. name .. "' returned nil - aborting collection" )
+                -- TODO: Some day we may want to allow them to return nil
+                if not value then
+                    return err( "Callback for metric '" .. name .. "' returned nil - aborting collection" )
+                end
+
+                tracker:AddPoint( value )
+            end )
+
+            if not success then
+                return err( "Failed to collect metric '" .. name .. "' - aborting collection" )
             end
-
-            tracker:AddPoint( value )
         end )
-
-        if not success then
-            return err( "Failed to collect metric '" .. name .. "' - aborting collection" )
-        end
-    end )
+    end
 
     table.insert( self.trackers, tracker )
 
@@ -148,6 +152,7 @@ function DogMetrics:Report()
         type = "application/json",
         timeout = 5,
         headers = { ["DD-API-KEY"] = apiKey:GetString() },
+        parameters = nil,
 
         body = body,
 
