@@ -2,8 +2,8 @@
 
 local Deque = include( "doglogs/utils/deque.lua" )
 
-local tracker = DogMetrics:NewMetric( {
-    name = "cfc.server.physenv.simulation_time",
+local Tracker = DogMetrics:NewMetric( {
+    name = "cfc.server.physenv.simulationTime",
     unit = "seconds",
     interval = 1,
     metricType = DogMetrics.MetricTypes.Gauge
@@ -33,7 +33,7 @@ hook.Add( "Think", "DogMetrics_ServerSimulationTime", function()
 
     i = i + 1
     if i >= windowSize then
-        tracker:AddPoint( currentTotal / windowSize )
+        Tracker:AddPoint( currentTotal / windowSize )
         i = 0
     end
 end )

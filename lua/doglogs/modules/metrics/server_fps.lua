@@ -2,7 +2,7 @@
 
 local Deque = include( "doglogs/utils/deque.lua" )
 
-local tracker = DogMetrics:NewMetric( {
+local Tracker = DogMetrics:NewMetric( {
     name = "cfc.server.fps",
     unit = "frame",
     interval = 1,
@@ -33,7 +33,7 @@ hook.Add( "Tick", "DogMetrics_ServerFPS", function()
 
     i = i + 1
     if i >= windowSize then
-        tracker:AddPoint( currentTotal / windowSize )
+        Tracker:AddPoint( currentTotal / windowSize )
         i = 0
     end
 end )

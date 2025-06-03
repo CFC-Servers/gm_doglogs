@@ -1,5 +1,5 @@
 local precacheCount = 0
-hook.Add( "HolyLib:OnModelPrecache", "DogLogs_TrackModelPrecache", function( _, idx )
+hook.Add( "HolyLib:OnModelPrecache", "DogMetrics_TrackModelPrecache", function( _, idx )
     precacheCount = idx
 end )
 
