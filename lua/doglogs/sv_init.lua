@@ -1,9 +1,9 @@
--- Find all files in modules/ and include them
-
 DogLogs = {}
 function DogLogs.Log( str )
     print( str )
 end
+
+include( "metrics.lua" )
 
 local modulesPath = "doglogs/modules/"
 

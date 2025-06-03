@@ -54,3 +54,39 @@ Now, we need to make the grok parsing rule. It's probably best if you copy from 
  - You can match a section of text without actually extracting it. For example, if there was a variable number that you didn't care about, you could match it with: `%{data}` and simply not include the `name` portion
  - The Log Samples section is limited to only 5 samples, so you'll eventually have to delete old samples. It's a good idea to copy the samples and re-paste them when you're done to make sure they still work
  - There is a section that pops up below the "Define parsing rules" box - this section shows an example of what your rule will extract from the sample (**Note**: this only shows an example of the Sample you most recently clicked into)
+
+## Metrics
+Metrics are a different way to directly report numeric Metrics straight to DataDog.
+
+You can add new Metrics in the `lua/doglogs/modules/` directory. Roughly, it should look like this:
+```lua
+DogMetrics:NewMetric( {
+    name = "cfc.server.luaMemory", -- Suggested to prefix this with `<org>.` so you can easily search for all of your metrics on DD
+    unit = "kilobyte", -- or "frame", "byte", "packet", etc.
+    interval = 1, -- In seconds, how often to collect this metric
+    metricType = DogMetrics.MetricTypes.Count, -- or .Rate, .Gauge
+    measureFunc = function()
+        -- This function gets called at the defined interval, and should return a number
+
+        return collectgarbage( "count" ) -- already in kilobytes
+    end
+} )
+```
+
+### Metrics Configuration:
+There are a few convars you'll want to set:
+
+#### `datadog_api_key`
+Should be set to the API key created in: https://app.datadoghq.com/organization-settings/api-keys
+
+#### `datadog_hostname`
+The hostname to use for the Metric reporting. Typically this is some meta-level name for the entire machine running your game server.
+
+#### `datadog_service_name`
+Some shortcode name for the game server - should match whatever you have setup in your DataDog agent _(not strictly necessary, but it helps DD correlate info)_
+
+#### `datadog_report_interval`
+In seconds, how often to report to DataDog. I think the only things to consider here are:
+- How big will each payload get? DD imposes a size limit of 500kB per payload.
+- What is your deal with DataDog?
+  - While the endpoint isn't rate-limited, you may have limits about the quantity of custom metrics
