@@ -64,7 +64,7 @@ DogMetrics:NewMetric( {
     name = "cfc.server.luaMemory", -- Suggested to prefix this with `<org>.` so you can easily search for all of your metrics on DD
     unit = "kilobyte", -- or "frame", "byte", "packet", etc.
     interval = 1, -- In seconds, how often to collect this metric
-    metricType = DogMetrics.MetricTypes.Count, -- or .Rate, .Gauge
+    metricType = DogMetrics.MetricTypes.Gauge, -- or .Rate, .Count
     measureFunc = function()
         -- This function gets called at the defined interval, and should return a number
 
