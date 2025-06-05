@@ -11,7 +11,7 @@ local reportInterval = CreateConVar( "datadog_report_interval", 10, { FCVAR_ARCH
 -- Ref about Metric Units: https://docs.datadoghq.com/metrics/units/
 
 --- @class DogMetrics
-DogMetrics = {
+local DogMetrics = {
     reportURL = "https://api.datadoghq.com/api/v2/series",
     trackers = {}
 }
@@ -74,36 +74,40 @@ function DogMetrics:NewMetric( struct )
         self.payload.points = points
     end
 
-    local timerName = "DogMetrics_Tracker_" .. name
+    local time = SysTime()
+    local timerName = "DogMetrics_Tracker_" .. name .. "_" .. time
 
     --- Report an error and remove the tracker from the list
     --- @param message string The error message to report
-    local function err( message )
+    function tracker.err( message )
         timer.Remove( timerName )
         table.RemoveByValue( self.trackers, tracker )
 
         error( "Error in metric '" .. name .. "': " .. message, 1 )
     end
 
-    -- If no callback is provided, we expect them to be using the tracker:AddPoint method directly at their own discretion
-    if cb then
-        timer.Create( timerName, interval, 0, function()
-            local success = ProtectedCall( function()
-                local value = cb()
+    --- The tick function that will be called by the tracker's timer
+    function tracker.tick()
+        if not cb then return end
 
-                -- TODO: Some day we may want to allow them to return nil
-                if not value then
-                    return err( "Callback for metric '" .. name .. "' returned nil - aborting collection" )
-                end
+        local success = ProtectedCall( function()
+            local value = cb()
 
-                tracker:AddPoint( value )
-            end )
-
-            if not success then
-                return err( "Failed to collect metric '" .. name .. "' - aborting collection" )
+            -- TODO: Some day we may want to allow them to return nil
+            if not value then
+                return tracker.err( "Callback for metric '" .. name .. "' returned nil - aborting collection" )
             end
+
+            tracker:AddPoint( value )
         end )
+
+        if not success then
+            return tracker.err( "Failed to collect metric '" .. name .. "' - aborting collection" )
+        end
     end
+
+    -- If no callback is provided, we expect them to be using the tracker:AddPoint method directly at their own discretion
+    if cb then timer.Create( timerName, interval, 0, tracker.tick ) end
 
     table.insert( self.trackers, tracker )
 
@@ -172,22 +176,29 @@ function DogMetrics:Report()
     end
 end
 
-timer.Create( "DogMetrics_Report", reportInterval:GetFloat(), 0, function()
-    if #DogMetrics.trackers == 0 then return end
-    DogMetrics:Report()
-end )
+function DogMetrics:Start()
+    local identifier = SysTime()
+    local uniqueName = function( name ) return name .. "_" .. identifier end
 
-hook.Add( "ShutDown", "DogMetrics_ShutDown", function()
-    DogMetrics:Report()
-end )
+    timer.Create( uniqueName( "DogMetrics_Report" ), reportInterval:GetFloat(), 0, function()
+        if #DogMetrics.trackers == 0 then return end
+        DogMetrics:Report()
+    end )
 
-cvars.AddChangeCallback( "datadog_report_interval", function( _, _, newValue )
-    local newInterval = tonumber( newValue )
-    if not newInterval or newInterval <= 0 then
-        print( "DogMetrics: Invalid report interval - must be a positive number" )
-        return
-    end
+    hook.Add( "ShutDown", uniqueName( "DogMetrics_ShutDown" ), function()
+        DogMetrics:Report()
+    end )
 
-    timer.Adjust( "DogMetrics_Report", newInterval )
-    print( "DogMetrics: Report interval changed to " .. newInterval .. " seconds" )
-end, "DogMetrics_Report_Interval_Change" )
+    cvars.AddChangeCallback( "datadog_report_interval", function( _, _, newValue )
+        local newInterval = tonumber( newValue )
+        if not newInterval or newInterval <= 0 then
+            print( "DogMetrics: Invalid report interval - must be a positive number" )
+            return
+        end
+
+        timer.Adjust( "DogMetrics_Report", newInterval )
+        print( "DogMetrics: Report interval changed to " .. newInterval .. " seconds" )
+    end, uniqueName( "DogMetrics_Report_Interval_Change" ) )
+end
+
+return DogMetrics

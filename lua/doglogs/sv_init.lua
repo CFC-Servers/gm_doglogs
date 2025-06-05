@@ -1,24 +1,27 @@
-DogLogs = {}
-function DogLogs.Log( str )
-    print( str )
-end
+--- @class DogLogs
+DogLogs = {
+    Log = print
+}
 
-include( "metrics.lua" )
+local DogMetrics = include( "metrics/sv_init.lua" )
+DogLogs.Metrics = DogMetrics
 
 local modulesPath = "doglogs/modules/"
 
-local function loadDirectory( path )
-    local files, dirs = file.Find( path .. "/*.lua", "LUA" )
-    for _, v in pairs( files ) do
-        local fullPath = path .. "/" .. v
-        print( "[DogLogs] Loading module: ", fullPath )
-        include( fullPath )
+function DogLogs.Load()
+    local function loadDirectory( path )
+        local files, dirs = file.Find( path .. "/*.lua", "LUA" )
+        for _, v in pairs( files ) do
+            local fullPath = path .. "/" .. v
+            print( "[DogLogs] Loading module: ", fullPath )
+            include( fullPath )
+        end
+
+        -- Load subdirectories
+        for _, v in pairs( dirs ) do
+            loadDirectory( path .. "/" .. v )
+        end
     end
 
-    -- Load subdirectories
-    for _, v in pairs( dirs ) do
-        loadDirectory( path .. "/" .. v )
-    end
+    loadDirectory( modulesPath )
 end
-
-loadDirectory( modulesPath )
