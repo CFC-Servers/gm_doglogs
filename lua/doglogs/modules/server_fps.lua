@@ -23,8 +23,8 @@ local frameQueue = Deque() do
 end
 
 local i = 0
-hook.Add( "Think", "DogMetrics_ServerFPS", function()
-    local fps = 1 / FrameTime()
+hook.Add( "Tick", "DogMetrics_ServerFPS", function()
+    local fps = 1 / engine.AbsoluteFrameTime()
 
     local oldestFps = frameQueue.Pop()
     frameQueue.Push( fps )
