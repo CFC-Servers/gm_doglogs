@@ -9,7 +9,7 @@ DogMetrics:NewMetric( {
 } )
 
 
-local entMeta = asseret( FindMetaTable( "Entity" ) )
+local entMeta = assert( FindMetaTable( "Entity" ) )
 local ent_IsValid = entMeta.IsValid
 local ent_GetClass = entMeta.GetClass
 local ent_IsNPC = entMeta.IsNPC
