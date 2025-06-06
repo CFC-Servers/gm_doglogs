@@ -1,5 +1,6 @@
 -- Records the PhysEnv's simulation time
 
+local physenv_GetLastSimulationTime = physenv.GetLastSimulationTime()
 local Deque = include( "doglogs/utils/deque.lua" )
 
 local Tracker = DogMetrics:NewMetric( {
@@ -23,8 +24,8 @@ local queue = Deque() do
 end
 
 local i = 0
-hook.Add( "Think", "DogMetrics_ServerSimulationTime", function()
-    local simulationTime = physenv.GetLastSimulationTime()
+hook.Add( "Tick", "DogMetrics_ServerSimulationTime", function()
+    local simulationTime = physenv_GetLastSimulationTime()
 
     local oldest = queue.Pop()
     queue.Push( simulationTime )

@@ -22,7 +22,7 @@ timer.Create( "DogMetrics_PlayerNetPerformance", 1, 0, function()
     for _, ply in ipairs( plys ) do
         if IsValid( ply ) and ply:IsConnected() then
             local ping = ply:Ping()
-            local loss = ply:GetPacketLoss()
+            local loss = ply:PacketLoss()
 
             totalPing = totalPing + ping
             totalLoss = totalLoss + loss

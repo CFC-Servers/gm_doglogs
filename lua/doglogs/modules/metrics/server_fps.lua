@@ -1,5 +1,6 @@
 -- Records the Server's FPS as a rate metric
 
+local engine_AbsoluteFrameTime = engine.AbsoluteFrameTime
 local Deque = include( "doglogs/utils/deque.lua" )
 
 local Tracker = DogMetrics:NewMetric( {
@@ -24,7 +25,7 @@ end
 
 local i = 0
 hook.Add( "Tick", "DogMetrics_ServerFPS", function()
-    local fps = 1 / engine.AbsoluteFrameTime()
+    local fps = 1 / engine_AbsoluteFrameTime()
 
     local oldest = queue.Pop()
     queue.Push( fps )
