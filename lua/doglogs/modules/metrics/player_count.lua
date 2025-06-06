@@ -42,7 +42,7 @@ end
 
 timer.Create( "DogMetrics_PlayerCountTracker", 5, 0, function()
     local afkCount = 0
-    local sentinelCount = 0 
+    local sentinelCount = 0
     local moderatorCount = 0
     local adminCount = 0
 

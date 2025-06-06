@@ -11,7 +11,7 @@ return {
                 expect( GetConVar( "datadog_service_name" ) ).to.exist()
                 expect( GetConVar( "datadog_report_interval" ) ).to.exist()
 
-                expect( DogMetrics ).to.beA( "table" )
+                expect( DogLogs.Metrics ).to.beA( "table" )
             end
         }
     }

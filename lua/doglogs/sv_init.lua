@@ -25,3 +25,5 @@ function DogLogs.Load()
 
     loadDirectory( modulesPath )
 end
+
+DogLogs.Load()
