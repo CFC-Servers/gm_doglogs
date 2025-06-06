@@ -1,6 +1,6 @@
 --- @type GLuaTest_TestGroup
 return {
-    groupName = "DogLogs:Metrics",
+    groupName = "DogMetrics",
 
     cases = {
         {
@@ -11,7 +11,7 @@ return {
                 expect( GetConVar( "datadog_service_name" ) ).to.exist()
                 expect( GetConVar( "datadog_report_interval" ) ).to.exist()
 
-                expect( DogLogs.Metrics ).to.beA( "table" )
+                expect( DogMetrics ).to.beA( "table" )
             end
         }
     }

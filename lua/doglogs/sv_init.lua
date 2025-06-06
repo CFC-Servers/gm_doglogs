@@ -3,8 +3,7 @@ DogLogs = {
     Log = print
 }
 
-local DogMetrics = include( "metrics/sv_init.lua" )
-DogLogs.Metrics = DogMetrics
+DogMetrics = include( "metrics/sv_init.lua" )
 
 local modulesPath = "doglogs/modules/"
 
