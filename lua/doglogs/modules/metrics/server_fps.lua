@@ -1,8 +1,9 @@
 -- Records the Server's FPS as a rate metric
 
+local engine_AbsoluteFrameTime = engine.AbsoluteFrameTime
 local Deque = include( "doglogs/utils/deque.lua" )
 
-local tracker = DogMetrics:NewMetric( {
+local Tracker = DogMetrics:NewMetric( {
     name = "cfc.server.fps",
     unit = "frame",
     interval = 1,
@@ -13,27 +14,27 @@ local windowSize = 10
 local currentTotal = 0
 
 -- Prefill the queue
-local frameQueue = Deque() do
+local queue = Deque() do
     local targetFps = 1 / engine.TickInterval()
     currentTotal = targetFps * windowSize
 
     for _ = 1, windowSize do
-        frameQueue.Push( targetFps )
+        queue.Push( targetFps )
     end
 end
 
 local i = 0
 hook.Add( "Tick", "DogMetrics_ServerFPS", function()
-    local fps = 1 / engine.AbsoluteFrameTime()
+    local fps = 1 / engine_AbsoluteFrameTime()
 
-    local oldestFps = frameQueue.Pop()
-    frameQueue.Push( fps )
+    local oldest = queue.Pop()
+    queue.Push( fps )
 
-    currentTotal = currentTotal + fps - oldestFps
+    currentTotal = currentTotal + fps - oldest
 
     i = i + 1
     if i >= windowSize then
-        tracker:AddPoint( currentTotal / windowSize )
+        Tracker:AddPoint( currentTotal / windowSize )
         i = 0
     end
 end )
