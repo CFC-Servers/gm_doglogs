@@ -16,7 +16,7 @@ local function makeTracker( class, name, cpuFunc )
 
         CPUsTracker = DogMetrics:NewMetric( {
             name = "cfc.server.chips." .. name .. "CPUs",
-            unit = "microseconds/s",
+            unit = "usage",
             interval = interval,
             metricType = DogMetrics.MetricTypes.Rate,
         } ),
@@ -53,7 +53,7 @@ timer.Create( "DogMetrics_ChipCounter", interval, 0, function()
         for _, ent in ipairs( ents.FindByClass( class ) ) do
             if ent_IsValid( ent ) then
                 count = count + 1
-                cpuSum = cpuSum + cpuFunc( ent ) * 1000000 -- Seconds to microseconds
+                cpuSum = cpuSum + cpuFunc( ent )
             end
         end
 
