@@ -1,6 +1,6 @@
 -- Records the PhysEnv's simulation time
 
-local physenv_GetLastSimulationTime = physenv.GetLastSimulationTime()
+local physenv_GetLastSimulationTime = physenv.GetLastSimulationTime
 local Deque = include( "doglogs/utils/deque.lua" )
 
 local Tracker = DogMetrics:NewMetric( {

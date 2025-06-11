@@ -5,11 +5,11 @@ DogLogs = {
 
 DogMetrics = include( "metrics/sv_init.lua" )
 
-local modulesPath = "doglogs/modules/"
+local modulesPath = "doglogs/modules"
 
 function DogLogs.Load()
     local function loadDirectory( path )
-        local files, dirs = file.Find( path .. "/*.lua", "LUA" )
+        local files = file.Find( path .. "/*.lua", "LUA" )
         for _, v in pairs( files ) do
             local fullPath = path .. "/" .. v
             print( "[DogLogs] Loading module: ", fullPath )
@@ -17,6 +17,7 @@ function DogLogs.Load()
         end
 
         -- Load subdirectories
+        local _, dirs = file.Find( path .. "/*", "LUA" )
         for _, v in pairs( dirs ) do
             loadDirectory( path .. "/" .. v )
         end
@@ -26,3 +27,4 @@ function DogLogs.Load()
 end
 
 DogLogs.Load()
+DogMetrics:Start()
