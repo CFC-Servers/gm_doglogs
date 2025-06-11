@@ -56,6 +56,7 @@ timer.Create( "DogMetrics_EntityCounter", interval, 0, function()
     npcCount = 0
     propPhysicsCount = 0
     unfrozenPropCount = 0
+    constraintCount = 0
 
     local allEnts = ents.GetAll()
     local entCount = #allEnts
