@@ -7,6 +7,8 @@ local serviceName = CreateConVar( "datadog_service_name", "", { FCVAR_ARCHIVE, F
 --- @diagnostic disable-next-line: param-type-mismatch
 local reportInterval = CreateConVar( "datadog_report_interval", 10, { FCVAR_ARCHIVE, FCVAR_PROTECTED }, "Interval in seconds to report metrics to DataDog" )
 
+local NewTracker = include( "tracker.lua" )
+
 -- API Ref: https://docs.datadoghq.com/api/latest/metrics/#submit-metrics
 -- Ref about Metric Units: https://docs.datadoghq.com/metrics/units/
 
@@ -18,109 +20,126 @@ local DogMetrics = {
 
 --- @enum DogMetrics_MetricTypes
 DogMetrics.MetricTypes = {
-    Unspecified = 0,
-    Count = 1,
-    Rate = 2,
-    Gauge = 3
+    Unspecified = "unspecified",
+    Count = "count",
+    Rate = "rate",
+    Gauge = "gauge"
 }
 
---- @class DogMetrics_NewMetricParams
---- @field name string The name of the metric
---- @field unit string The unit of the metric (e.g., "ms", "bytes", etc.)
---- @field interval number The interval in seconds at which the metric should be reported
---- @field metricType DogMetrics_MetricTypes The type of the metric
---- @field measureFunc? fun(): number Callback function that will be called with the tracker object - returns the value to add to the metric
-
 --- Creates a new metric tracker
---- @param struct DogMetrics_NewMetricParams The parameters for the new metric
---- @return DogMetrics_Tracker The tracker object that can be used to add points to the metric
-function DogMetrics:NewMetric( struct )
-    local name = assert( struct.name, "Metric name is required" )
-    local unit = assert( struct.unit, "Metric unit is required" )
-    local interval = assert( struct.interval, "Metric interval is required" )
-    local metricType = assert( struct.metricType, "Metric type is required" )
-    local cb = struct.measureFunc
-
-    local points = {}
-
-    --- @class DogMetrics_Tracker
-    local tracker = {
-        payload = {
-            interval = interval, -- Apparently not needed for the Gauge type
-            metric = name,
-            type = metricType,
-            unit = unit,
-            points = points,
-            resources = {
-                { name = "gmod", type = "source" },
-                { name = hostname:GetString(), type = "host" },
-                { name = serviceName:GetString(), type = "service" }
-            }
-        }
-    }
-
-    --- Adds a point to the tracker's timeseries
-    --- @param value number The value to add to the timeseries
-    function tracker:AddPoint( value )
-        table.insert( points, {
-            timestamp = os.time(),
-            value = value
-        } )
-    end
-
-    --- Clears all points from the tracker
-    function tracker:ClearPoints()
-        points = {}
-        self.payload.points = points
-    end
-
-    local time = SysTime()
-    local timerName = "DogMetrics_Tracker_" .. name .. "_" .. time
-
-    --- Report an error and remove the tracker from the list
-    --- @param message string The error message to report
-    function tracker.err( message )
-        timer.Remove( timerName )
-        table.RemoveByValue( self.trackers, tracker )
-
-        error( "Error in metric '" .. name .. "': " .. message, 1 )
-    end
-
-    --- The tick function that will be called by the tracker's timer
-    function tracker.tick()
-        if not cb then return end
-
-        local success = ProtectedCall( function()
-            local value = cb()
-
-            -- TODO: Some day we may want to allow them to return nil
-            if not value then
-                return tracker.err( "Callback for metric '" .. name .. "' returned nil - aborting collection" )
-            end
-
-            tracker:AddPoint( value )
-        end )
-
-        if not success then
-            return tracker.err( "Failed to collect metric '" .. name .. "' - aborting collection" )
-        end
-    end
-
-    -- If no callback is provided, we expect them to be using the tracker:AddPoint method directly at their own discretion
-    if cb then timer.Create( timerName, interval, 0, tracker.tick ) end
+--- @private
+--- @param name string The name of the metric
+--- @param unit string The unit of the metric (e.g., "ms", "bytes", etc.)
+--- @param metricType DogMetrics_MetricTypes The type of the metric (e.g., Count, Rate, Gauge)
+--- @param interval number? The interval in seconds at which the metric should be reported (if omitted, as is the case in Count and Rates, the interval defaults to the reporting interval)
+--- @return DogMetrics_Tracker tracker The tracker object that can be used to add points to the metric
+function DogMetrics:NewTracker( name, unit, metricType, interval )
+    local tracker = NewTracker( {
+        name = name,
+        unit = unit,
+        interval = interval,
+        metricType = metricType,
+        hostname = hostname:GetString(),
+        serviceName = serviceName:GetString()
+    } )
 
     table.insert( self.trackers, tracker )
 
     return tracker
 end
 
+--- Removes the given tracker from the list of trackers
+--- @param tracker DogMetrics_Tracker The tracker to remove
+function DogMetrics:RemoveTracker( tracker )
+    table.RemoveByValue( self.trackers, tracker )
+end
+
+--- Creates a new Gauge Tracker
+--- A Gauge is a metric that represents a single numerical value that can go up or down
+--- When measured, it will report the current value at the time of measurement.
+--- By default, it has an internal timer that will query the value each iteration.
+--- You may also exclude the measure function and manually call the `AddPoint` method to add values to the gauge.
+--- @param name string The name of the gauge
+--- @param unit string The unit of the gauge (e.g., "ms", "bytes", etc.)
+--- @param interval? number The interval in seconds at which the gauge should be measured (only required if a measure function is provided)
+--- @param measure? fun(): number? A function that returns the current value of the gauge
+function DogMetrics:NewGauge( name, unit, interval, measure )
+    local tracker = self:NewTracker( name, unit, DogMetrics.MetricTypes.Gauge )
+
+    --- If no measure function is provided, we expect the user to manually call `tracker.AddPoint( value )`
+    if not measure then return tracker end
+    interval = assert( interval, "Metric harvest interval is required for automatic gauges" )
+
+    tracker.Timer( "Gauge_Measure", interval, function()
+        local value = measure()
+        if value then
+            tracker.AddPoint( value )
+        else
+            -- NOTE: If we ever have a good reason to return nil, we should remove this else block
+            tracker.err( "Gauge '" .. name .. "' measure function returned nil" )
+        end
+    end )
+
+    return tracker
+end
+
+do
+    --- Utility to create a new generic Counter Tracker
+    --- This is appropriate for either "Count" or "Rate" metrics.
+    --- @param name string The name of the counter metric
+    --- @param unit string The unit of the counter metric (e.g., "requests", "errors", etc.)
+    --- @param metricType DogMetrics_MetricTypes The type of the counter metric (either Count or Rate)
+    local function createCounterTracker( name, unit, metricType )
+        --- @class DogMetrics_CounterTracker : DogMetrics_Tracker
+        local tracker = self:NewTracker( name, unit, metricType, reportInterval:GetFloat() )
+
+        --- @type number The current count value
+        local count = 0
+
+        --- Increment the count
+        --- @param value number? The value to increment the count by (default is 1)
+        function tracker.Increment( value )
+            if value == nil then value = 1 end
+            count = count + value
+        end
+
+        function tracker.PreparePoints()
+            tracker.AddPoint( count )
+            count = 0
+        end
+
+        return tracker
+    end
+
+    --- Creates a new Count Tracker
+    --- Use this for metrics that represent a total count of events in a timeframe, such as the number of requests or errors.
+    --- Use the `Increment` method on the returned Tracker object to increment the count.
+    --- @param name string The name of the count Metric
+    --- @param unit string The unit of the count metric (e.g., "spawns", "chats", etc.)
+    function DogMetrics:NewCount( name, unit )
+        return createCounterTracker( name, unit, DogMetrics.MetricTypes.Count )
+    end
+
+    --- Creates a new Rate Tracker
+    --- Use this for metrics that represent a rate of events per timeframe.
+    --- Use the `Increment` method on the returned Tracker object to increment the count.
+    --- @param name string The name of the rate metric
+    --- @param unit string The unit of the rate metric (e.g., "requests", "errors", etc.)
+    function DogMetrics:NewRate( name, unit )
+        return createCounterTracker( name, unit, DogMetrics.MetricTypes.Rate )
+    end
+end
+
+
 --- Returns a JSON payload suitable for reporting to the DataDog Metrics API
 function DogMetrics:GetReportPayload()
     local payload = { series = {} }
 
     for _, tracker in ipairs( self.trackers ) do
-        if #tracker.payload.points > 0 then
-            table.insert( payload.series, tracker.payload )
+        local trackerPayload = tracker:GetPayload()
+
+        if trackerPayload then
+            table.insert( payload.series, trackerPayload )
         end
     end
 
@@ -128,7 +147,7 @@ function DogMetrics:GetReportPayload()
 end
 
 --- Clears all points from all trackers
-function DogMetrics:ClearTrackers()
+function DogMetrics:ClearTrackerPoints()
     for _, tracker in ipairs( self.trackers ) do
         tracker:ClearPoints()
     end
@@ -146,9 +165,7 @@ function DogMetrics:Report()
     local payload = self:GetReportPayload()
     local body = util.TableToJSON( payload )
 
-    for _, tracker in ipairs( self.trackers ) do
-        tracker:ClearPoints()
-    end
+    self:ClearTrackerPoints()
 
     local queued = HTTP( {
         url = self.reportURL,

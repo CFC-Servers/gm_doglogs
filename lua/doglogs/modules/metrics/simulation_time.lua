@@ -1,14 +1,7 @@
--- Records the PhysEnv's simulation time
-
 local physenv_GetLastSimulationTime = physenv.GetLastSimulationTime
 local Deque = include( "doglogs/utils/deque.lua" )
 
-local Tracker = DogMetrics:NewMetric( {
-    name = "cfc.server.physenv.simulationTime",
-    unit = "seconds",
-    interval = 1,
-    metricType = DogMetrics.MetricTypes.Gauge
-} )
+local Tracker = DogMetrics:NewGauge( "cfc.server.physenv.simulationTime", "seconds" )
 
 local windowSize = 10
 local currentTotal = 0
@@ -34,7 +27,7 @@ hook.Add( "Tick", "DogMetrics_ServerSimulationTime", function()
 
     i = i + 1
     if i >= windowSize then
-        Tracker:AddPoint( currentTotal / windowSize )
+        Tracker.AddPoint( currentTotal / windowSize )
         i = 0
     end
 end )

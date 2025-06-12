@@ -1,13 +1,6 @@
-DogMetrics:NewMetric( {
-    name = "cfc.server.entCount.total",
-    unit = "entity",
-    interval = 5,
-    metricType = DogMetrics.MetricTypes.Gauge,
-    measureFunc = function()
-        return ents.GetCount()
-    end
-} )
-
+DogMetrics:NewGauge( "cfc.server.entCount.total", "entities", 5, function()
+    return ents.GetCount()
+end )
 
 --- @type Entity
 local entMeta = assert( FindMetaTable( "Entity" ) )
@@ -21,36 +14,16 @@ local ent_GetPhysicsObject = entMeta.GetPhysicsObject
 local interval = 10
 
 local npcCount = 0
-local NPCTracker = DogMetrics:NewMetric( {
-    name = "cfc.server.entCount.npc",
-    unit = "npc",
-    interval = interval,
-    metricType = DogMetrics.MetricTypes.Gauge,
-} )
+local NPCTracker = DogMetrics:NewGauge( "cfc.server.entCount.npc", "npcs" )
 
 local propPhysicsCount = 0
-local PropPhysicsTracker = DogMetrics:NewMetric( {
-    name = "cfc.server.entCount.props.total",
-    unit = "prop",
-    interval = interval,
-    metricType = DogMetrics.MetricTypes.Gauge,
-} )
+local PropPhysicsTracker = DogMetrics:NewGauge( "cfc.server.entCount.props.total", "props" )
 
 local unfrozenPropCount = 0
-local UnfrozenTracker = DogMetrics:NewMetric( {
-    name = "cfc.server.entCount.props.unfrozen",
-    unit = "prop",
-    interval = interval,
-    metricType = DogMetrics.MetricTypes.Gauge,
-} )
+local UnfrozenTracker = DogMetrics:NewGauge( "cfc.server.entCount.props.unfrozen", "prop" )
 
 local constraintCount = 0
-local ConstraintTracker = DogMetrics:NewMetric( {
-    name = "cfc.server.entCount.constraint",
-    unit = "constraint",
-    interval = interval,
-    metricType = DogMetrics.MetricTypes.Gauge,
-} )
+local ConstraintTracker = DogMetrics:NewGauge( "cfc.server.entCount.constraints", "constraints" )
 
 timer.Create( "DogMetrics_EntityCounter", interval, 0, function()
     npcCount = 0
@@ -79,8 +52,8 @@ timer.Create( "DogMetrics_EntityCounter", interval, 0, function()
         end
     end
 
-    NPCTracker:AddPoint( npcCount )
-    PropPhysicsTracker:AddPoint( propPhysicsCount )
-    UnfrozenTracker:AddPoint( unfrozenPropCount )
-    ConstraintTracker:AddPoint( constraintCount )
+    NPCTracker.AddPoint( npcCount )
+    PropPhysicsTracker.AddPoint( propPhysicsCount )
+    UnfrozenTracker.AddPoint( unfrozenPropCount )
+    ConstraintTracker.AddPoint( constraintCount )
 end )
