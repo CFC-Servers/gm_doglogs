@@ -136,7 +136,7 @@ function DogMetrics:GetReportPayload()
     local payload = { series = {} }
 
     for _, tracker in ipairs( self.trackers ) do
-        local trackerPayload = tracker:GetPayload()
+        local trackerPayload = tracker.GetPayload()
 
         if trackerPayload then
             table.insert( payload.series, trackerPayload )
@@ -149,7 +149,7 @@ end
 --- Clears all points from all trackers
 function DogMetrics:ClearTrackerPoints()
     for _, tracker in ipairs( self.trackers ) do
-        tracker:ClearPoints()
+        tracker.ClearPoints()
     end
 end
 
