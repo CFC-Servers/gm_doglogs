@@ -1,40 +1,11 @@
-DogMetrics:NewMetric( {
-    name = "cfc.server.players.total",
-    unit = "player",
-    interval = 1,
-    metricType = DogMetrics.MetricTypes.Gauge,
-    measureFunc = function()
-        return #player.GetHumans()
-    end
-} )
+DogMetrics:NewGauge( "cfc.server.players.total", "players", 1, function()
+    return #player.GetHumans()
+end )
 
-local AFKTracker = DogMetrics:NewMetric( {
-    name = "cfc.server.players.afk",
-    unit = "player",
-    interval = 5,
-    metricType = DogMetrics.MetricTypes.Gauge,
-} )
-
-local SentinelTracker = DogMetrics:NewMetric( {
-    name = "cfc.server.players.sentinel",
-    unit = "player",
-    interval = 5,
-    metricType = DogMetrics.MetricTypes.Gauge,
-} )
-
-local ModeratorTracker = DogMetrics:NewMetric( {
-    name = "cfc.server.players.moderator",
-    unit = "player",
-    interval = 5,
-    metricType = DogMetrics.MetricTypes.Gauge,
-} )
-
-local AdminTracker = DogMetrics:NewMetric( {
-    name = "cfc.server.players.admin",
-    unit = "player",
-    interval = 5,
-    metricType = DogMetrics.MetricTypes.Gauge,
-} )
+local AFKTracker = DogMetrics:NewGauge( "cfc.server.players.afk", "players" )
+local SentinelTracker = DogMetrics:NewGauge( "cfc.server.players.sentinel", "players" )
+local ModeratorTracker = DogMetrics:NewGauge( "cfc.server.players.moderator", "players" )
+local AdminTracker = DogMetrics:NewGauge( "cfc.server.players.admin", "players" )
 
 local function isAdmin( ply )
     return ply:IsAdmin() or ply:IsSuperAdmin()
@@ -62,8 +33,8 @@ timer.Create( "DogMetrics_PlayerCountTracker", 5, 0, function()
         end
     end
 
-    AFKTracker:AddPoint( afkCount )
-    SentinelTracker:AddPoint( sentinelCount )
-    ModeratorTracker:AddPoint( moderatorCount )
-    AdminTracker:AddPoint( adminCount )
+    AFKTracker.AddPoint( afkCount )
+    SentinelTracker.AddPoint( sentinelCount )
+    ModeratorTracker.AddPoint( moderatorCount )
+    AdminTracker.AddPoint( adminCount )
 end )

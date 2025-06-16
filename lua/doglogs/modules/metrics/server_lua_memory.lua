@@ -1,11 +1,3 @@
--- Records the server's Lua memory size
-
-DogMetrics:NewMetric( {
-    name = "cfc.server.luaMemory",
-    unit = "kilobyte",
-    interval = 1,
-    metricType = DogMetrics.MetricTypes.Gauge,
-    measureFunc = function()
-        return collectgarbage( "count" )
-    end
-} )
+DogMetrics:NewGauge( "cfc.server.luaMemory", "kilobyte", 1, function()
+    return collectgarbage( "count" )
+end )

@@ -1,7 +1,1 @@
-DogMetrics:NewMetric( {
-    name = "cfc.server.uptime",
-    unit = "seconds",
-    interval = 1,
-    metricType = DogMetrics.MetricTypes.Gauge,
-    measureFunc = SysTime
-} )
+DogMetrics:NewGauge( "cfc.server.uptime", "seconds", 1, SysTime )
