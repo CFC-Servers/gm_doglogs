@@ -1,13 +1,3 @@
-DogMetrics:NewMetric( {
-    name = "cfc.server.entCount.total",
-    unit = "entity",
-    interval = 5,
-    metricType = DogMetrics.MetricTypes.Gauge,
-    measureFunc = function()
-        return ents.GetCount()
-    end
-} )
-
 
 --- @type Entity
 local entMeta = assert( FindMetaTable( "Entity" ) )
@@ -19,6 +9,13 @@ local ent_IsConstraint = entMeta.IsConstraint
 local ent_GetPhysicsObject = entMeta.GetPhysicsObject
 
 local interval = 10
+
+local TotalTracker = DogMetrics:NewMetric( {
+    name = "cfc.server.entCount.total",
+    unit = "entity",
+    interval = interval,
+    metricType = DogMetrics.MetricTypes.Gauge,
+} )
 
 local npcCount = 0
 local NPCTracker = DogMetrics:NewMetric( {
@@ -79,6 +76,7 @@ timer.Create( "DogMetrics_EntityCounter", interval, 0, function()
         end
     end
 
+    TotalTracker:AddPoint( entCount )
     NPCTracker:AddPoint( npcCount )
     PropPhysicsTracker:AddPoint( propPhysicsCount )
     UnfrozenTracker:AddPoint( unfrozenPropCount )
