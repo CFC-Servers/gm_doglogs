@@ -3,8 +3,6 @@
 local entMeta = assert( FindMetaTable( "Entity" ) )
 local ent_IsValid = entMeta.IsValid
 local ent_GetClass = entMeta.GetClass
-local ent_IsNPC = entMeta.IsNPC
-local ent_IsNextBot = entMeta.IsNextBot
 local ent_IsConstraint = entMeta.IsConstraint
 local ent_GetPhysicsObject = entMeta.GetPhysicsObject
 
@@ -60,10 +58,10 @@ timer.Create( "DogMetrics_EntityCounter", interval, 0, function()
 
     for i = 1, entCount do
         local ent = allEnts[i]
-        if ent_IsNPC( ent ) or ent_IsNextBot( ent ) then
-            npcCount = npcCount + 1
-        elseif ent_IsValid( ent ) then
-            if ent_GetClass( ent ) == "prop_physics" then
+        if ent_IsValid( ent ) then
+            if ent:IsNPC() or ent:IsNextBot() then -- These don't work correctly with the Entity metatable
+                npcCount = npcCount + 1
+            elseif ent_GetClass( ent ) == "prop_physics" then
                 propPhysicsCount = propPhysicsCount + 1
 
                 local physObj = ent_GetPhysicsObject( ent )
